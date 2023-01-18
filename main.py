@@ -13,14 +13,18 @@ deta = Deta()
 db = deta.Base("health")
 
 
-def check_status(bot: TeleBot):
-    msg = bot.send_message(HEARTBEAT_CHAT_ID, "tick")
-    return "Online" if msg.message_id else "Offline"
-
-
 def heartbeat(bot: TeleBot, name: str):
-    status = check_status(bot)
-    db.put({"status": status, "last_update": int(datetime.now(tz=timezone("Europe/Kiev")).timestamp())}, name)
+    last_message = db.get(name)
+    if last_message:
+        bot.delete_message(HEARTBEAT_CHAT_ID, last_message["last_message_id"])
+
+    msg = bot.send_message(HEARTBEAT_CHAT_ID, "tick")
+    status = "Online" if msg.message_id else "Offline"
+    db.put({
+        "status": status,
+        "last_message_id": msg.message_id,
+        "last_update": int(datetime.now(tz=timezone("Europe/Kiev")).timestamp())
+    }, name)
 
 
 @app.get("/")
